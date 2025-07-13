@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AntiBlox - Modern Chat Platform</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landing-page">
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="logo-large">
+                    <i class="fas fa-gamepad"></i>
+                    <h1>AntiBlox</h1>
+                </div>
+                <p class="hero-subtitle">The ultimate Roblox community platform</p>
+                <p class="hero-description">Connect with fellow Roblox enthusiasts, share experiences, and discover new content in our modern chat environment.</p>
+                
+                <div class="auth-buttons">
+                    <button class="btn-primary" id="show-login">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login
+                    </button>
+                    <button class="btn-secondary" id="show-register">
+                        <i class="fas fa-user-plus"></i>
+                        Register
+                    </button>
+                </div>
+
+                <div class="features-preview">
+                    <div class="feature">
+                        <i class="fas fa-comments"></i>
+                        <span>Real-time Chat</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Secure Platform</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-users"></i>
+                        <span>Active Community</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-sign-in-alt"></i> Welcome Back</h3>
+                <button class="close-btn" id="close-login">&times;</button>
+            </div>
+            
+            <form class="auth-form" id="login-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="login-username" placeholder="Username" required>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                </div>
+
+                <div class="input-group">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="login-admin-code" placeholder="Admin Code (Optional)">
+                </div>
+                
+                <button type="submit" class="btn-primary full-width">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login to Chat
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="#" id="switch-to-register">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="register-modal">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Join AntiBlox</h3>
+                <button class="close-btn" id="close-register">&times;</button>
+            </div>
+            
+            <form class="auth-form" id="register-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="register-username" placeholder="Choose Username" required minlength="3" maxlength="20">
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="register-email" placeholder="Email Address" required>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="register-password" placeholder="Password" required minlength="6">
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="register-confirm-password" placeholder="Confirm Password" required>
+                </div>
+
+                <div class="input-group">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="register-admin-code" placeholder="Admin Code (Optional)">
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms-agree" required>
+                    <label for="terms-agree">I agree to the <a href="#" id="show-terms">Terms of Service</a></label>
+                </div>
+                
+                <button type="submit" class="btn-primary full-width">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Already have an account? <a href="#" id="switch-to-login">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Application (Hidden by default) -->
+    <div class="app-container" id="chat-app" style="display: none;">
+        <!-- Enhanced Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <div>
+                    <h2>AntiBlox</h2>
+                    <p>Modern Chat</p>
+                </div>
+            </div>
+            
+            <div class="servers">
+                <h3><i class="fas fa-hashtag"></i> Channels</h3>
+                <div class="server-list">
+                    <div class="server active" data-server="general">
+                        <i class="fas fa-comments"></i>
+                        <span>general</span>
+                    </div>
+                    <div class="server" data-server="uploads">
+                        <i class="fas fa-upload"></i>
+                        <span>uploads</span>
+                    </div>
+                    <div class="server" data-server="nsfw">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>nsfw</span>
+                        <span class="age-badge">18+</span>
+                    </div>
+                    <div class="server" data-server="gaming">
+                        <i class="fas fa-gamepad"></i>
+                        <span>gaming</span>
+                    </div>
+                    <div class="server" data-server="announcements">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>announcements</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-info">
+                <div class="user-avatar" id="sidebar-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <span class="username" id="current-username">Guest User</span>
+                    <span class="user-role" id="current-role">Member</span>
+                    <span class="status online">
+                        <i class="fas fa-circle"></i>
+                        Online
+                    </span>
+                </div>
+                <button class="logout-btn" id="logout-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Enhanced Chat Container -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="channel-info">
+                    <h3 id="current-server">
+                        <i class="fas fa-hashtag"></i>
+                        general
+                    </h3>
+                    <span class="channel-description" id="channel-description">General discussion and community chat</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn modern-btn" id="member-list-btn" title="Member List">
+                        <i class="fas fa-users"></i>
+                        <span class="btn-text">Members</span>
+                    </button>
+                    <button class="btn modern-btn" id="search-btn" title="Search Messages">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn modern-btn" id="clear-chat" title="Clear Chat">
+                        <i class="fas fa-broom"></i>
+                    </button>
+                    <button class="btn modern-btn" id="ban-user-btn" title="Ban User">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                    <button class="btn modern-btn" id="settings-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messages">
+                <div class="welcome-message">
+                    <div class="welcome-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3>Welcome to AntiBlox!</h3>
+                    <p>Connect with the Roblox community. Share experiences, trade items, and make new friends!</p>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span class="typing-text">Someone is typing...</span>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="input-wrapper">
+                    <button class="attachment-btn" title="Attach File">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="text" id="message-input" placeholder="Type your message..." maxlength="500">
+                    <button class="emoji-picker-btn" title="Emojis">
+                        <i class="fas fa-smile"></i>
+                    </button>
+                    <button id="send-btn" title="Send Message">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="quick-actions">
+                    <button class="emoji-btn" data-emoji="🔥">🔥</button>
+                    <button class="emoji-btn" data-emoji="💎">💎</button>
+                    <button class="emoji-btn" data-emoji="🎮">🎮</button>
+                    <button class="emoji-btn" data-emoji="⭐">⭐</button>
+                    <button class="emoji-btn" data-emoji="😂">😂</button>
+                    <button class="emoji-btn" data-emoji="❤️">❤️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced User List -->
+        <div class="user-list">
+            <div class="user-list-header">
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Online Users
+                    <span class="user-count" id="user-count">1</span>
+                </h3>
+                <button class="refresh-users-btn" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div class="users" id="online-users">
+                <div class="user">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">You</span>
+                        <span class="user-role-badge">Member</span>
+                    </div>
+                    <span class="user-status online">
+                        <i class="fas fa-circle"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Modals -->
+    <div class="modal" id="member-modal" style="display: none;">
+        <div class="modal-content modern-modal large-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-users"></i> Server Members</h3>
+                <button class="close-btn" id="close-members">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-members">
+                    <input type="text" placeholder="Search members..." id="member-search">
+                </div>
+                <div id="member-list-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="ban-modal" style="display: none;">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-ban"></i> Ban User</h3>
+                <button class="close-btn" id="cancel-ban">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="ban-username-input" placeholder="Username to ban...">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-comment"></i>
+                    <textarea id="ban-reason-input" placeholder="Reason for ban..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button id="confirm-ban" class="btn-danger">
+                        <i class="fas fa-ban"></i>
+                        Ban User
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="settings-modal" style="display: none;">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="close-btn" id="close-settings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Appearance</h4>
+                    <div class="setting-item">
+                        <label>Theme</label>
+                        <select id="theme-select">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="auto">Auto</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h4>Notifications</h4>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="sound-notifications">
+                            Sound notifications
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="desktop-notifications">
+                            Desktop notifications
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
