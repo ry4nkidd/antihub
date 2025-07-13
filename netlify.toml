@@ -1,4 +1,3 @@
-toml
-[build]
-  publish = "build"
-  command = "npm run build"
+\toml
+   [build]
+   publish = "."
