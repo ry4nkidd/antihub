@@ -694,7 +694,11 @@ class AntiBloxChat {
         }
         
         this.bannedUsers.add(usernameToBan);
-        localStorage.setItem('antiblox_banned_users', JSON.stringify([...this.bannedUsers]));
+        try {
+            localStorage.setItem('antiblox_banned_users', JSON.stringify([...this.bannedUsers]));
+        } catch (error) {
+            console.warn('Failed to save banned users to localStorage:', error);
+        }
         
         // Remove banned user from online users
         this.onlineUsers.delete(usernameToBan);
@@ -836,9 +840,17 @@ class AntiBloxChat {
 
     // Settings
     loadSettings() {
-        const theme = localStorage.getItem('antiblox_theme') || 'dark';
-        const soundNotifications = localStorage.getItem('antiblox_sound_notifications') !== 'false';
-        const desktopNotifications = localStorage.getItem('antiblox_desktop_notifications') === 'true';
+        let theme, soundNotifications, desktopNotifications;
+        try {
+            theme = localStorage.getItem('antiblox_theme') || 'dark';
+            soundNotifications = localStorage.getItem('antiblox_sound_notifications') !== 'false';
+            desktopNotifications = localStorage.getItem('antiblox_desktop_notifications') === 'true';
+        } catch (error) {
+            console.warn('Failed to load settings from localStorage:', error);
+            theme = 'dark';
+            soundNotifications = true;
+            desktopNotifications = false;
+        }
         
         const themeSelect = document.getElementById('theme-select');
         const soundCheckbox = document.getElementById('sound-notifications');
@@ -868,8 +880,13 @@ class AntiBloxChat {
     }
 
     saveAccounts() {
-        const accountsArray = Array.from(this.userAccounts.entries());
-        localStorage.setItem('antiblox_accounts', JSON.stringify(accountsArray));
+        try {
+            const accountsArray = Array.from(this.userAccounts.entries());
+            localStorage.setItem('antiblox_accounts', JSON.stringify(accountsArray));
+        } catch (error) {
+            console.warn('Failed to save accounts to localStorage:', error);
+            this.showNotification('Failed to save user data', 'error');
+        }
     }
 
     syncData() {
