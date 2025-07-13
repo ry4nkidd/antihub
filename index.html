@@ -312,6 +312,7 @@
         // Feature 11-20: Advanced UI Features
         function setupEventListeners() {
             joinBtn.addEventListener('click', joinChat);
+            console.log('Event listener added to joinBtn');
             usernameInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') joinChat();
             });
@@ -404,9 +405,11 @@
         }
 
         function joinChat() {
+            console.log('joinChat() function called');
             const username = usernameInput.value.trim();
             const adminCode = document.getElementById('admin-code-input').value.trim();
             
+            console.log('Username:', username);
             if (username) {
                 currentUser = username;
                 showLoadingScreen();
@@ -421,9 +424,9 @@
                     chatApp.classList.remove('hidden');
                     messageInput.focus();
                     document.getElementById('current-username').textContent = username;
-                }, 1500);
+              }, 1500);
             }
-        }
+        }  
 
         function showLoadingScreen() {
             loadingScreen.classList.remove('hidden');
