@@ -19,7 +19,7 @@
                 </div>
                 <p class="hero-subtitle">The ultimate Roblox community platform</p>
                 <p class="hero-description">Connect with fellow Roblox enthusiasts, share experiences, and discover new content in our modern chat environment.</p>
-                
+
                 <div class="auth-buttons">
                     <button class="btn-primary" id="show-login">
                         <i class="fas fa-sign-in-alt"></i>
@@ -56,13 +56,13 @@
                 <h3><i class="fas fa-sign-in-alt"></i> Welcome Back</h3>
                 <button class="close-btn" id="close-login">&times;</button>
             </div>
-            
+
             <form class="auth-form" id="login-form">
                 <div class="input-group">
                     <i class="fas fa-user"></i>
                     <input type="text" id="login-username" placeholder="Username" required>
                 </div>
-                
+
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
                     <input type="password" id="login-password" placeholder="Password" required>
@@ -72,13 +72,13 @@
                     <i class="fas fa-key"></i>
                     <input type="password" id="login-admin-code" placeholder="Admin Code (Optional)">
                 </div>
-                
+
                 <button type="submit" class="btn-primary full-width">
                     <i class="fas fa-sign-in-alt"></i>
                     Login to Chat
                 </button>
             </form>
-            
+
             <div class="auth-footer">
                 <p>Don't have an account? <a href="#" id="switch-to-register">Register here</a></p>
             </div>
@@ -92,23 +92,23 @@
                 <h3><i class="fas fa-user-plus"></i> Join AntiBlox</h3>
                 <button class="close-btn" id="close-register">&times;</button>
             </div>
-            
+
             <form class="auth-form" id="register-form">
                 <div class="input-group">
                     <i class="fas fa-user"></i>
                     <input type="text" id="register-username" placeholder="Choose Username" required minlength="3" maxlength="20">
                 </div>
-                
+
                 <div class="input-group">
                     <i class="fas fa-envelope"></i>
                     <input type="email" id="register-email" placeholder="Email Address" required>
                 </div>
-                
+
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
                     <input type="password" id="register-password" placeholder="Password" required minlength="6">
                 </div>
-                
+
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
                     <input type="password" id="register-confirm-password" placeholder="Confirm Password" required>
@@ -118,18 +118,18 @@
                     <i class="fas fa-key"></i>
                     <input type="password" id="register-admin-code" placeholder="Admin Code (Optional)">
                 </div>
-                
+
                 <div class="checkbox-group">
                     <input type="checkbox" id="terms-agree" required>
                     <label for="terms-agree">I agree to the <a href="#" id="show-terms">Terms of Service</a></label>
                 </div>
-                
+
                 <button type="submit" class="btn-primary full-width">
                     <i class="fas fa-user-plus"></i>
                     Create Account
                 </button>
             </form>
-            
+
             <div class="auth-footer">
                 <p>Already have an account? <a href="#" id="switch-to-login">Login here</a></p>
             </div>
@@ -147,7 +147,7 @@
                     <p>Modern Chat</p>
                 </div>
             </div>
-            
+
             <div class="servers">
                 <h3><i class="fas fa-hashtag"></i> Channels</h3>
                 <div class="server-list">
@@ -373,6 +373,7 @@
         </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
