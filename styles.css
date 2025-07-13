@@ -5,7 +5,6 @@
 }
 
 :root {
-    /* Dark Theme Variables */
     --primary-bg: #0d1117;
     --secondary-bg: #161b22;
     --tertiary-bg: #21262d;
@@ -27,7 +26,7 @@ body {
     background: var(--primary-bg);
     color: var(--primary-text);
     height: 100vh;
-    overflow: hidden;
+    overflow: auto;
     line-height: 1.5;
 }
 
@@ -36,8 +35,8 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #21262d 100%);
     display: flex;
     align-items: center;
@@ -49,6 +48,9 @@ body {
     text-align: center;
     max-width: 600px;
     padding: 2rem;
+    background: var(--secondary-bg);
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow);
 }
 
 .logo-large {
@@ -160,8 +162,8 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(8px);
     display: none;
