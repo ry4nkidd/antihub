@@ -361,6 +361,32 @@ class AntiBloxChat {
             avatar.innerHTML = this.currentUser.charAt(0).toUpperCase();
             avatar.style.background = this.userColors[this.currentUser] || '#7289da';
         }
+        
+        this.updateMessageInputState();
+    }
+
+    updateMessageInputState() {
+        if (!this.messageInput) return;
+        
+        if (this.currentChannel === 'uploads' && !this.hasAdminCode) {
+            this.messageInput.placeholder = 'Only users with admin codes can type here...';
+            this.messageInput.disabled = true;
+            this.messageInput.style.opacity = '0.6';
+            
+            if (this.sendBtn) {
+                this.sendBtn.disabled = true;
+                this.sendBtn.style.opacity = '0.6';
+            }
+        } else {
+            this.messageInput.placeholder = 'Type your message...';
+            this.messageInput.disabled = false;
+            this.messageInput.style.opacity = '1';
+            
+            if (this.sendBtn) {
+                this.sendBtn.disabled = false;
+                this.sendBtn.style.opacity = '1';
+            }
+        }
     }
 
     // Chat functionality
@@ -394,6 +420,9 @@ class AntiBloxChat {
             }
         });
         
+        // Update message input placeholder based on channel permissions
+        this.updateMessageInputState();
+        
         this.renderMessages();
     }
 
@@ -404,6 +433,12 @@ class AntiBloxChat {
         // Check if user is banned
         if (this.bannedUsers.has(this.currentUser.toLowerCase())) {
             this.showNotification('You have been banned from this server', 'error');
+            return;
+        }
+        
+        // Check if user can type in uploads channel
+        if (this.currentChannel === 'uploads' && !this.hasAdminCode) {
+            this.showNotification('Only users with admin codes can type in uploads channel', 'error');
             return;
         }
         
