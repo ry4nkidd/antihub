@@ -17,7 +17,9 @@ class AntiBloxChat {
         this.userColors = {};
         this.bannedUsers = new Set(JSON.parse(localStorage.getItem('antiblox_banned_users') || '[]'));
         this.userAccounts = new Map(JSON.parse(localStorage.getItem('antiblox_accounts') || '[]'));
-        
+        this.socket = null;
+        this.typingUsers = new Set();
+
         this.channelDescriptions = {
             general: 'General discussion and community chat',
             uploads: 'Share your files, images, and media content',
@@ -28,6 +30,7 @@ class AntiBloxChat {
 
         this.initializeElements();
         this.bindEvents();
+        this.initializeWebSocket();
         this.showLandingPage();
         this.loadSettings();
     }
@@ -37,13 +40,13 @@ class AntiBloxChat {
         this.landingPage = document.getElementById('landing-page');
         this.showLoginBtn = document.getElementById('show-login');
         this.showRegisterBtn = document.getElementById('show-register');
-        
+
         // Auth modal elements
         this.loginModal = document.getElementById('login-modal');
         this.registerModal = document.getElementById('register-modal');
         this.loginForm = document.getElementById('login-form');
         this.registerForm = document.getElementById('register-form');
-        
+
         // Auth inputs
         this.loginUsername = document.getElementById('login-username');
         this.loginPassword = document.getElementById('login-password');
@@ -53,7 +56,7 @@ class AntiBloxChat {
         this.registerPassword = document.getElementById('register-password');
         this.registerConfirmPassword = document.getElementById('register-confirm-password');
         this.registerAdminCode = document.getElementById('register-admin-code');
-        
+
         // Chat app elements
         this.chatApp = document.getElementById('chat-app');
         this.messageInput = document.getElementById('message-input');
@@ -66,7 +69,7 @@ class AntiBloxChat {
         this.onlineUsersElement = document.getElementById('online-users');
         this.userCountElement = document.getElementById('user-count');
         this.logoutBtn = document.getElementById('logout-btn');
-        
+
         // UI elements
         this.emojiButtons = document.querySelectorAll('.emoji-btn');
         this.clearChatBtn = document.getElementById('clear-chat');
@@ -74,47 +77,103 @@ class AntiBloxChat {
         this.memberListBtn = document.getElementById('member-list-btn');
         this.banUserBtn = document.getElementById('ban-user-btn');
         this.settingsBtn = document.getElementById('settings-btn');
-        
+
         // Modals
         this.memberModal = document.getElementById('member-modal');
         this.banModal = document.getElementById('ban-modal');
         this.settingsModal = document.getElementById('settings-modal');
         this.memberListContent = document.getElementById('member-list-content');
-        
+
         // Typing indicator
         this.typingIndicator = document.getElementById('typing-indicator');
         this.typingTimeout = null;
+    }
+
+    initializeWebSocket() {
+        this.socket = io();
+
+        this.socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        this.socket.on('user_joined', (data) => {
+            this.handleUserJoined(data);
+        });
+
+        this.socket.on('user_left', (data) => {
+            this.handleUserLeft(data);
+        });
+
+        this.socket.on('new_message', (message) => {
+            this.handleNewMessage(message);
+        });
+
+        this.socket.on('channel_history', (data) => {
+            this.handleChannelHistory(data);
+        });
+
+        this.socket.on('system_message', (data) => {
+            this.addSystemMessage(data.text);
+        });
+
+        this.socket.on('chat_cleared', (data) => {
+            if (data.channel === this.currentChannel) {
+                this.messagesContainer.innerHTML = '';
+                this.showWelcomeMessage();
+            }
+        });
+
+        this.socket.on('user_typing', (data) => {
+            this.handleUserTyping(data);
+        });
+
+        this.socket.on('user_stop_typing', (data) => {
+            this.handleUserStopTyping(data);
+        });
+
+        this.socket.on('banned', (data) => {
+            this.showNotification(data.message, 'error');
+            this.logout();
+        });
+
+        this.socket.on('error', (data) => {
+            this.showNotification(data.message, 'error');
+        });
+
+        this.socket.on('message_error', (data) => {
+            this.showNotification(data.message, 'error');
+        });
     }
 
     bindEvents() {
         // Landing page events
         this.showLoginBtn?.addEventListener('click', () => this.showLoginModal());
         this.showRegisterBtn?.addEventListener('click', () => this.showRegisterModal());
-        
+
         // Auth form events
         this.loginForm?.addEventListener('submit', (e) => this.handleLogin(e));
         this.registerForm?.addEventListener('submit', (e) => this.handleRegister(e));
-        
+
         // Modal switching
         document.getElementById('switch-to-register')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.hideLoginModal();
             this.showRegisterModal();
         });
-        
+
         document.getElementById('switch-to-login')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.hideRegisterModal();
             this.showLoginModal();
         });
-        
+
         // Close modal events
         document.getElementById('close-login')?.addEventListener('click', () => this.hideLoginModal());
         document.getElementById('close-register')?.addEventListener('click', () => this.hideRegisterModal());
         document.getElementById('close-members')?.addEventListener('click', () => this.hideMemberModal());
         document.getElementById('cancel-ban')?.addEventListener('click', () => this.hideBanModal());
         document.getElementById('close-settings')?.addEventListener('click', () => this.hideSettingsModal());
-        
+
         // Chat events
         this.sendBtn?.addEventListener('click', () => this.sendMessage());
         this.messageInput?.addEventListener('keypress', (e) => {
@@ -124,9 +183,9 @@ class AntiBloxChat {
                 this.handleTyping();
             }
         });
-        
+
         this.logoutBtn?.addEventListener('click', () => this.logout());
-        
+
         // Emoji buttons
         this.emojiButtons?.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -134,7 +193,7 @@ class AntiBloxChat {
                 this.messageInput.focus();
             });
         });
-        
+
         // Channel switching
         this.serverButtons?.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -142,31 +201,31 @@ class AntiBloxChat {
                 this.switchChannel(channel);
             });
         });
-        
+
         // UI actions
         this.memberListBtn?.addEventListener('click', () => this.showMemberModal());
         this.banUserBtn?.addEventListener('click', () => this.showBanModal());
         this.settingsBtn?.addEventListener('click', () => this.showSettingsModal());
         this.clearChatBtn?.addEventListener('click', () => this.clearChat());
-        
+
         document.getElementById('confirm-ban')?.addEventListener('click', () => this.banUser());
-        
+
         // Click outside to close modals
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 this.hideAllModals();
             }
         });
-        
+
         // Settings events
         document.getElementById('theme-select')?.addEventListener('change', (e) => {
             this.changeTheme(e.target.value);
         });
-        
+
         document.getElementById('sound-notifications')?.addEventListener('change', (e) => {
             this.toggleSoundNotifications(e.target.checked);
         });
-        
+
         document.getElementById('desktop-notifications')?.addEventListener('change', (e) => {
             this.toggleDesktopNotifications(e.target.checked);
         });
@@ -210,66 +269,66 @@ class AntiBloxChat {
 
     async handleLogin(e) {
         e.preventDefault();
-        
+
         const username = this.loginUsername.value.trim();
         const password = this.loginPassword.value.trim();
         const adminCode = this.loginAdminCode.value.trim();
-        
+
         if (!username || !password) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-        
+
         // Check if user exists and password matches
         const userKey = username.toLowerCase();
         const userData = this.userAccounts.get(userKey);
-        
+
         if (!userData || userData.password !== password) {
             this.showNotification('Invalid username or password', 'error');
             return;
         }
-        
+
         // Check if user is banned
         if (this.bannedUsers.has(userKey)) {
             this.showNotification('Your account has been banned', 'error');
             return;
         }
-        
+
         await this.authenticateUser(username, userData.email, adminCode);
     }
 
     async handleRegister(e) {
         e.preventDefault();
-        
+
         const username = this.registerUsername.value.trim();
         const email = this.registerEmail.value.trim();
         const password = this.registerPassword.value.trim();
         const confirmPassword = this.registerConfirmPassword.value.trim();
         const adminCode = this.registerAdminCode.value.trim();
-        
+
         if (!username || !email || !password || !confirmPassword) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-        
+
         if (password !== confirmPassword) {
             this.showNotification('Passwords do not match', 'error');
             return;
         }
-        
+
         if (password.length < 6) {
             this.showNotification('Password must be at least 6 characters', 'error');
             return;
         }
-        
+
         const userKey = username.toLowerCase();
-        
+
         // Check if username already exists
         if (this.userAccounts.has(userKey)) {
             this.showNotification('Username already exists', 'error');
             return;
         }
-        
+
         // Create new account
         const userData = {
             username: username,
@@ -277,19 +336,19 @@ class AntiBloxChat {
             password: password,
             registeredAt: new Date().toISOString()
         };
-        
+
         this.userAccounts.set(userKey, userData);
         this.saveAccounts();
-        
+
         this.showNotification('Account created successfully!', 'success');
-        
+
         await this.authenticateUser(username, email, adminCode);
     }
 
     async authenticateUser(username, email, adminCode) {
         let role = 'Member';
         this.hasAdminCode = false;
-        
+
         // Check admin codes
         if (adminCode === 'freenode..m4sk') {
             role = 'Admin';
@@ -300,34 +359,28 @@ class AntiBloxChat {
         } else if (adminCode === 'vipcode456') {
             role = 'VIP';
         }
-        
+
         this.currentUser = username;
         this.currentRole = role;
         this.isAuthenticated = true;
-        
+
         this.hideAllModals();
         this.showChatApp();
-        
+
         this.userColors[username] = this.generateUserColor();
-        this.onlineUsers.set(username, {
+        
+        // Authenticate with WebSocket server
+        this.socket.emit('authenticate', {
+            username: username,
             role: role,
-            email: email,
-            color: this.userColors[username],
-            lastSeen: Date.now(),
-            hasAdminCode: this.hasAdminCode
+            hasAdminCode: this.hasAdminCode,
+            email: email
         });
-        
+
         this.updateUserInterface();
-        this.addSystemMessage(`${username} joined as ${role}! 🎮`);
-        this.updateOnlineUsers();
         this.messageInput?.focus();
-        
+
         this.showNotification(`Welcome back, ${username}!`, 'success');
-        
-        // Auto-sync every 30 seconds
-        setInterval(() => {
-            this.syncData();
-        }, 30000);
     }
 
     showChatApp() {
@@ -341,10 +394,10 @@ class AntiBloxChat {
         this.currentRole = 'Member';
         this.hasAdminCode = false;
         this.onlineUsers.clear();
-        
+
         this.chatApp.style.display = 'none';
         this.showLandingPage();
-        
+
         this.showNotification('Logged out successfully', 'info');
     }
 
@@ -355,44 +408,18 @@ class AntiBloxChat {
         if (this.currentRoleElement) {
             this.currentRoleElement.textContent = this.currentRole;
         }
-        
+
         const avatar = document.getElementById('sidebar-avatar');
         if (avatar && this.currentUser) {
             avatar.innerHTML = this.currentUser.charAt(0).toUpperCase();
             avatar.style.background = this.userColors[this.currentUser] || '#7289da';
-        }
-        
-        this.updateMessageInputState();
-    }
-
-    updateMessageInputState() {
-        if (!this.messageInput) return;
-        
-        if (this.currentChannel === 'uploads' && !this.hasAdminCode) {
-            this.messageInput.placeholder = 'Only users with admin codes can type here...';
-            this.messageInput.disabled = true;
-            this.messageInput.style.opacity = '0.6';
-            
-            if (this.sendBtn) {
-                this.sendBtn.disabled = true;
-                this.sendBtn.style.opacity = '0.6';
-            }
-        } else {
-            this.messageInput.placeholder = 'Type your message...';
-            this.messageInput.disabled = false;
-            this.messageInput.style.opacity = '1';
-            
-            if (this.sendBtn) {
-                this.sendBtn.disabled = false;
-                this.sendBtn.style.opacity = '1';
-            }
         }
     }
 
     // Chat functionality
     switchChannel(channel) {
         this.currentChannel = channel;
-        
+
         const channelIcon = {
             general: 'fas fa-comments',
             uploads: 'fas fa-upload',
@@ -400,18 +427,18 @@ class AntiBloxChat {
             gaming: 'fas fa-gamepad',
             announcements: 'fas fa-bullhorn'
         };
-        
+
         if (this.currentServerElement) {
             this.currentServerElement.innerHTML = `
                 <i class="${channelIcon[channel] || 'fas fa-hashtag'}"></i>
                 ${channel}
             `;
         }
-        
+
         if (this.channelDescription) {
             this.channelDescription.textContent = this.channelDescriptions[channel] || '';
         }
-        
+
         // Update active channel
         this.serverButtons?.forEach(btn => {
             btn.classList.remove('active');
@@ -419,29 +446,21 @@ class AntiBloxChat {
                 btn.classList.add('active');
             }
         });
-        
-        // Update message input placeholder based on channel permissions
-        this.updateMessageInputState();
-        
-        this.renderMessages();
+
+        // Clear current messages
+        this.messagesContainer.innerHTML = '';
+        this.showWelcomeMessage();
+
+        // Switch channel via WebSocket
+        if (this.socket && this.isAuthenticated) {
+            this.socket.emit('switch_channel', { channel });
+        }
     }
 
     async sendMessage() {
         let text = this.messageInput?.value.trim();
         if (!text || !this.isAuthenticated) return;
-        
-        // Check if user is banned
-        if (this.bannedUsers.has(this.currentUser.toLowerCase())) {
-            this.showNotification('You have been banned from this server', 'error');
-            return;
-        }
-        
-        // Check if user can type in uploads channel
-        if (this.currentChannel === 'uploads' && !this.hasAdminCode) {
-            this.showNotification('Only users with admin codes can type in uploads channel', 'error');
-            return;
-        }
-        
+
         // Auto-delete admin codes from messages
         const adminCodes = ['freenode..m4sk', 'modpass123', 'vipcode456'];
         adminCodes.forEach(code => {
@@ -449,37 +468,26 @@ class AntiBloxChat {
                 text = text.replace(new RegExp(code, 'gi'), '[ADMIN CODE REMOVED]');
             }
         });
-        
-        const message = {
-            id: Date.now(),
-            username: this.currentUser,
-            role: this.currentRole,
+
+        // Send message via WebSocket
+        this.socket.emit('send_message', {
             text: text,
-            timestamp: new Date().toISOString(),
             channel: this.currentChannel
-        };
-        
-        this.messages[this.currentChannel].push(message);
-        this.addMessageToDOM(message);
+        });
+
         this.messageInput.value = '';
-        this.scrollToBottom();
-        
-        // Play notification sound
-        this.playNotificationSound();
-        
-        // Hide typing indicator
-        this.hideTypingIndicator();
+        this.socket.emit('stop_typing', { channel: this.currentChannel });
     }
 
     addMessageToDOM(message) {
         const messageElement = document.createElement('div');
         messageElement.className = 'message';
-        
+
         const userColor = this.userColors[message.username] || '#7289da';
         const roleColor = this.getRoleColor(message.role);
         const roleIcon = this.getRoleIcon(message.role);
         const time = new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
+
         messageElement.innerHTML = `
             <div class="message-avatar" style="background: ${userColor}">
                 ${message.username.charAt(0).toUpperCase()}
@@ -493,17 +501,17 @@ class AntiBloxChat {
                 <div class="message-text">${this.formatMessage(message.text)}</div>
             </div>
         `;
-        
+
         this.messagesContainer?.appendChild(messageElement);
     }
 
     formatMessage(text) {
         // Convert URLs to links
         text = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: var(--accent-color);">$1</a>');
-        
+
         // Convert @mentions to highlights
         text = text.replace(/@(\w+)/g, '<span style="background: var(--accent-color); color: white; padding: 0.125rem 0.375rem; border-radius: 0.25rem;">@$1</span>');
-        
+
         return text;
     }
 
@@ -517,10 +525,10 @@ class AntiBloxChat {
 
     renderMessages() {
         if (!this.messagesContainer) return;
-        
+
         this.messagesContainer.innerHTML = '';
         const currentMessages = this.messages[this.currentChannel] || [];
-        
+
         if (currentMessages.length === 0) {
             this.showWelcomeMessage();
         } else {
@@ -528,14 +536,14 @@ class AntiBloxChat {
                 this.addMessageToDOM(message);
             });
         }
-        
+
         this.scrollToBottom();
     }
 
     showWelcomeMessage() {
         const welcomeMsg = document.createElement('div');
         welcomeMsg.className = 'welcome-message';
-        
+
         const channelInfo = {
             general: {
                 icon: 'fas fa-rocket',
@@ -563,9 +571,9 @@ class AntiBloxChat {
                 description: 'Important updates, news, and announcements from the server staff.'
             }
         };
-        
+
         const info = channelInfo[this.currentChannel] || channelInfo.general;
-        
+
         welcomeMsg.innerHTML = `
             <div class="welcome-icon">
                 <i class="${info.icon}"></i>
@@ -573,25 +581,25 @@ class AntiBloxChat {
             <h3>${info.title}</h3>
             <p>${info.description}</p>
         `;
-        
+
         this.messagesContainer?.appendChild(welcomeMsg);
     }
 
     // User management
     updateOnlineUsers() {
         if (!this.onlineUsersElement || !this.userCountElement) return;
-        
+
         this.onlineUsersElement.innerHTML = '';
-        
+
         // Update user count
         this.userCountElement.textContent = this.onlineUsers.size;
-        
+
         // Add current user first
         if (this.currentUser) {
             const userElement = this.createUserElement(this.currentUser, this.currentRole, true);
             this.onlineUsersElement.appendChild(userElement);
         }
-        
+
         // Add other users
         this.onlineUsers.forEach((userData, username) => {
             if (username !== this.currentUser) {
@@ -604,12 +612,12 @@ class AntiBloxChat {
     createUserElement(username, role, isCurrentUser) {
         const userElement = document.createElement('div');
         userElement.className = 'user';
-        
+
         const color = this.userColors[username] || '#7289da';
         const roleColor = this.getRoleColor(role);
         const roleIcon = this.getRoleIcon(role);
         const displayName = isCurrentUser ? 'You' : username;
-        
+
         userElement.innerHTML = `
             <div class="user-avatar" style="background: ${color}">
                 ${username.charAt(0).toUpperCase()}
@@ -622,26 +630,26 @@ class AntiBloxChat {
                 <i class="fas fa-circle"></i>
             </span>
         `;
-        
+
         return userElement;
     }
 
     // Modal management
     showMemberModal() {
         if (!this.memberModal || !this.memberListContent) return;
-        
+
         this.memberListContent.innerHTML = '';
-        
+
         const memberCount = document.createElement('p');
         memberCount.textContent = `Total Members: ${this.onlineUsers.size}`;
         memberCount.style.marginBottom = '15px';
         memberCount.style.color = 'var(--secondary-text)';
         this.memberListContent.appendChild(memberCount);
-        
+
         // Add current user
         const currentUserElement = this.createMemberListItem(this.currentUser, this.currentRole, true);
         this.memberListContent.appendChild(currentUserElement);
-        
+
         // Add other users
         this.onlineUsers.forEach((userData, username) => {
             if (username !== this.currentUser) {
@@ -649,7 +657,7 @@ class AntiBloxChat {
                 this.memberListContent.appendChild(memberElement);
             }
         });
-        
+
         this.memberModal.style.display = 'flex';
     }
 
@@ -662,12 +670,12 @@ class AntiBloxChat {
     createMemberListItem(username, role, isCurrentUser) {
         const memberElement = document.createElement('div');
         memberElement.className = 'member-item';
-        
+
         const color = this.userColors[username] || '#7289da';
         const roleColor = this.getRoleColor(role);
         const roleIcon = this.getRoleIcon(role);
         const displayName = isCurrentUser ? `${username} (You)` : username;
-        
+
         memberElement.innerHTML = `
             <div class="member-avatar" style="background: ${color}">
                 ${username.charAt(0).toUpperCase()}
@@ -677,7 +685,7 @@ class AntiBloxChat {
                 <span class="member-role" style="color: ${roleColor}">${roleIcon} ${role}</span>
             </div>
         `;
-        
+
         return memberElement;
     }
 
@@ -712,40 +720,31 @@ class AntiBloxChat {
     async banUser() {
         const banUsernameInput = document.getElementById('ban-username-input');
         const banReasonInput = document.getElementById('ban-reason-input');
-        
+
         if (!banUsernameInput || !banReasonInput) return;
-        
-        const usernameToBan = banUsernameInput.value.trim().toLowerCase();
+
+        const usernameToBan = banUsernameInput.value.trim();
         const reason = banReasonInput.value.trim() || 'No reason provided';
-        
+
         if (!usernameToBan) {
             this.showNotification('Please enter a username to ban', 'error');
             return;
         }
-        
-        if (usernameToBan === this.currentUser.toLowerCase()) {
+
+        if (usernameToBan.toLowerCase() === this.currentUser.toLowerCase()) {
             this.showNotification('You cannot ban yourself', 'error');
             return;
         }
-        
-        this.bannedUsers.add(usernameToBan);
-        try {
-            localStorage.setItem('antiblox_banned_users', JSON.stringify([...this.bannedUsers]));
-        } catch (error) {
-            console.warn('Failed to save banned users to localStorage:', error);
-        }
-        
-        // Remove banned user from online users
-        this.onlineUsers.delete(usernameToBan);
-        this.updateOnlineUsers();
-        
-        this.addSystemMessage(`${usernameToBan} was banned by ${this.currentUser}. Reason: ${reason} 🔨`);
-        
+
+        // Send ban request via WebSocket
+        this.socket.emit('ban_user', {
+            username: usernameToBan,
+            reason: reason
+        });
+
         this.hideBanModal();
         banUsernameInput.value = '';
         banReasonInput.value = '';
-        
-        this.showNotification(`User ${usernameToBan} has been banned`, 'success');
     }
 
     async clearChat() {
@@ -753,10 +752,12 @@ class AntiBloxChat {
             this.showNotification('Only Moderators and Admins can clear chat', 'error');
             return;
         }
-        
-        this.messages[this.currentChannel] = [];
-        this.renderMessages();
-        this.addSystemMessage(`Chat cleared by ${this.currentUser} 🧹`);
+
+        // Send clear chat request via WebSocket
+        this.socket.emit('clear_chat', {
+            channel: this.currentChannel
+        });
+
         this.showNotification('Chat cleared successfully', 'success');
     }
 
@@ -790,14 +791,18 @@ class AntiBloxChat {
     }
 
     handleTyping() {
+        if (this.socket && this.isAuthenticated) {
+            this.socket.emit('typing', { channel: this.currentChannel });
+        }
+
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
         }
-        
-        this.showTypingIndicator();
-        
+
         this.typingTimeout = setTimeout(() => {
-            this.hideTypingIndicator();
+            if (this.socket && this.isAuthenticated) {
+                this.socket.emit('stop_typing', { channel: this.currentChannel });
+            }
         }, 3000);
     }
 
@@ -836,18 +841,18 @@ class AntiBloxChat {
             animation: slideIn 0.3s ease-out;
             max-width: 300px;
         `;
-        
+
         const colors = {
             success: 'var(--success-color)',
             error: 'var(--warning-color)',
             info: 'var(--accent-color)'
         };
-        
+
         notification.style.borderLeftColor = colors[type] || colors.info;
         notification.textContent = message;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 4000);
@@ -860,14 +865,14 @@ class AntiBloxChat {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = 800;
             gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
         }
@@ -886,15 +891,15 @@ class AntiBloxChat {
             soundNotifications = true;
             desktopNotifications = false;
         }
-        
+
         const themeSelect = document.getElementById('theme-select');
         const soundCheckbox = document.getElementById('sound-notifications');
         const desktopCheckbox = document.getElementById('desktop-notifications');
-        
+
         if (themeSelect) themeSelect.value = theme;
         if (soundCheckbox) soundCheckbox.checked = soundNotifications;
         if (desktopCheckbox) desktopCheckbox.checked = desktopNotifications;
-        
+
         this.changeTheme(theme);
     }
 
@@ -924,9 +929,125 @@ class AntiBloxChat {
         }
     }
 
+    // WebSocket event handlers
+    handleUserJoined(data) {
+        const { username, role, onlineUsers } = data;
+        
+        // Update online users list
+        this.onlineUsers.clear();
+        onlineUsers.forEach(user => {
+            this.onlineUsers.set(user.username, {
+                role: user.role,
+                hasAdminCode: user.hasAdminCode
+            });
+            if (!this.userColors[user.username]) {
+                this.userColors[user.username] = this.generateUserColor();
+            }
+        });
+
+        this.updateOnlineUsers();
+
+        if (username !== this.currentUser) {
+            this.addSystemMessage(`${username} joined as ${role}! 🎮`);
+            this.playNotificationSound();
+        }
+    }
+
+    handleUserLeft(data) {
+        const { username, onlineUsers } = data;
+        
+        // Update online users list
+        this.onlineUsers.clear();
+        onlineUsers.forEach(user => {
+            this.onlineUsers.set(user.username, {
+                role: user.role,
+                hasAdminCode: user.hasAdminCode
+            });
+        });
+
+        this.updateOnlineUsers();
+        this.addSystemMessage(`${username} left the server 👋`);
+    }
+
+    handleNewMessage(message) {
+        // Add message to current channel if it matches
+        if (message.channel === this.currentChannel) {
+            this.addMessageToDOM(message);
+            this.scrollToBottom();
+            
+            // Play notification sound if message is not from current user
+            if (message.username !== this.currentUser) {
+                this.playNotificationSound();
+            }
+        }
+
+        // Store message in memory
+        if (!this.messages[message.channel]) {
+            this.messages[message.channel] = [];
+        }
+        this.messages[message.channel].push(message);
+    }
+
+    handleChannelHistory(data) {
+        const { channel, messages } = data;
+        
+        // Clear current messages
+        this.messagesContainer.innerHTML = '';
+        
+        // Show welcome message if no history
+        if (messages.length === 0) {
+            this.showWelcomeMessage();
+        } else {
+            // Display historical messages
+            messages.forEach(message => {
+                this.addMessageToDOM(message);
+            });
+        }
+        
+        // Store messages
+        this.messages[channel] = messages;
+        this.scrollToBottom();
+    }
+
+    handleUserTyping(data) {
+        if (data.channel === this.currentChannel && data.username !== this.currentUser) {
+            this.typingUsers.add(data.username);
+            this.updateTypingIndicator();
+        }
+    }
+
+    handleUserStopTyping(data) {
+        if (data.channel === this.currentChannel) {
+            this.typingUsers.delete(data.username);
+            this.updateTypingIndicator();
+        }
+    }
+
+    updateTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (!typingIndicator) return;
+
+        if (this.typingUsers.size > 0) {
+            const users = Array.from(this.typingUsers);
+            let text;
+            if (users.length === 1) {
+                text = `${users[0]} is typing...`;
+            } else if (users.length === 2) {
+                text = `${users[0]} and ${users[1]} are typing...`;
+            } else {
+                text = `${users.length} people are typing...`;
+            }
+            
+            typingIndicator.querySelector('.typing-text').textContent = text;
+            typingIndicator.style.display = 'flex';
+        } else {
+            typingIndicator.style.display = 'none';
+        }
+    }
+
     syncData() {
-        // Placeholder for data synchronization
-        console.log('Syncing data...');
+        // WebSocket handles real-time synchronization
+        console.log('Data synced via WebSocket');
     }
 }
 
@@ -943,7 +1064,7 @@ notificationStyles.textContent = `
             opacity: 1;
         }
     }
-    
+
     .notification {
         animation: slideIn 0.3s ease-out;
         border-left: 4px solid var(--accent-color);
