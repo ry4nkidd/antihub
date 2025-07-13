@@ -13,6 +13,7 @@ const PASTEBIN_API_URL = 'https://pastebin.com/api/api_post.php';
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+app.use('/socket.io', express.static(path.join(__dirname, 'node_modules/socket.io/client-dist')));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
